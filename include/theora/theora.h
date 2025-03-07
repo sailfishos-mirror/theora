@@ -15,8 +15,8 @@
 
  ********************************************************************/
 
-#ifndef _O_THEORA_H_
-#define _O_THEORA_H_
+#ifndef OGG_THEORA_HEADER
+#define OGG_THEORA_HEADER
 
 #ifdef __cplusplus
 extern "C"
@@ -783,4 +783,4 @@ extern int theora_control(theora_state *th,int req,void *buf,size_t buf_sz);
 }
 #endif /* __cplusplus */
 
-#endif /* _O_THEORA_H_ */
+#endif /* OGG_THEORA_HEADER */
