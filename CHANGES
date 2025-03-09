@@ -13,7 +13,8 @@ libteora 1.2.0 (2025 March 16)
 - Improved library documentation and specification text.
 - Adjusted library dependencies so libtheoraenc do not depend on
   libtheoradec.
-- Fixes CVE-2017-14633 in encoder_example and transcoder_example.
+- Handle fallout from CVE-2017-14633 in libvorbis, check return value
+  in encoder_example and transcoder_example.
 
 libteora 1.2.0alpha1 (2010 September 23)
 
