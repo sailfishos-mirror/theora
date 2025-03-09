@@ -1,3 +1,20 @@
+libteora 1.2.0 (2025 March 16)
+- Updated libogg dependency to version 1.3.4 for ogg_uint64_t.
+- Updated doxygen setup.
+- Updated autotools setup and support scripts.
+- Added support for RISC OS.
+- Improved ARM support.
+- Converted SCons setup to work with Python 3.
+- Introduced new configure options --enable-mem-constraint and
+  --enable-gcc-sanitizers.
+- Fixed all known compiler warnings and errors from gcc and clang.
+- Improved examples for stability and correctness.
+- Variuos speed, bug fixes and code quality improvements.
+- Improved library documentation and specification text.
+- Adjusted library dependencies so libtheoraenc do not depend on
+  libtheoradec.
+- Fixes CVE-2017-14633 in encoder_example and transcoder_example.
+
 libteora 1.2.0alpha1 (2010 September 23)
 
 - New 'ptalarbvorm' encoder with better rate/distortion optimization
