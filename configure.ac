@@ -140,6 +140,7 @@ _ACEOF
         if test -w conftest.tex; then rm conftest.tex; fi
         if test -w conftest.tex; then rm conftest.aux; fi
         if test -w conftest.pdf; then rm conftest.pdf; fi
+	echo "Cross: $cross_compiling"
         if test "x$tex_pkg_ok" = "xyes" && test x$cross_compiling = xno; then
           BUILD_SPEC="true"
         fi
