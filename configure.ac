@@ -306,7 +306,7 @@ if test "x${ac_enable_asm}" = xyes; then
         ARM_CCASFLAGS="-march=armv5e"
         CFLAGS="$save_CFLAGS $ARM_CCASFLAGS"
         AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
-        if test x$HAVE_ARM_ASM_MEDIA != x1 ; then
+        if test x$HAVE_ARM_ASM_EDSP != x1 ; then
           ARM_CCASFLAGS=
           CFLAGS="$save_CFLAGS"
         fi
