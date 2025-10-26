@@ -20,6 +20,12 @@
 
 #include "x86cpu.h"
 
+#if defined(_WIN32)
+# define WIN32_LEAN_AND_MEAN
+# define WIN32_EXTRA_LEAN
+# include <windows.h>
+#endif
+
 #if !defined(OC_X86_ASM)
 ogg_uint32_t oc_cpu_flags_get(void){
   return 0;
@@ -177,6 +183,20 @@ ogg_uint32_t oc_cpu_flags_get(void){
     /*Implement me.*/
     flags=0;
   }
+#if defined(_WIN32)
+  OSVERSIONINFO win_version_info;
+  memset(&win_version_info, 0, sizeof(win_version_info));
+  win_version_info.dwOSVersionInfoSize = sizeof(win_version_info);
+  GetVersionEx(&win_version_info);
+
+  if (win_version_info.dwMajorVersion < 4 ||
+      (win_version_info.dwMajorVersion == 4 && win_version_info.dwMinorVersion == 0)) {
+    // Windows 95 and NT4 or before don't backup SSE+ XMM registers when switching tasks
+    // Disable SSE and stick to MMX to avoid possible corruption
+    flags &= OC_CPU_X86_MMX|OC_CPU_X86_3DNOW|OC_CPU_X86_3DNOWEXT|OC_CPU_X86_MMXEXT;
+  }
+
+#endif
   return flags;
 }
 #endif
