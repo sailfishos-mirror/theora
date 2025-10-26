@@ -56,7 +56,7 @@ void oc_enc_enquant_table_fixup_x86(void *_enquant[3][3][2],int _nqis){
   }
 }
 
-int oc_enc_quantize_sse2(ogg_int16_t _qdct[64],const ogg_int16_t _dct[64],
+int __attribute__((target("sse2"))) oc_enc_quantize_sse2(ogg_int16_t _qdct[64],const ogg_int16_t _dct[64],
  const ogg_uint16_t _dequant[64],const void *_enquant){
   ptrdiff_t r;
   __asm__ __volatile__(
@@ -141,7 +141,9 @@ int oc_enc_quantize_sse2(ogg_int16_t _qdct[64],const ogg_int16_t _dct[64],
     "add %k[q],%k[r]\n\t"
     :[r]"=&a"(r),[q]"+r"(_enquant),[dq]"+r"(_dequant)
     :[dct]"r"(_dct),[qdct]"r"(_qdct)
-    :"cc","memory"
+    :"cc","memory",
+     "%xmm0", "%xmm1", "%xmm2", "%xmm3",
+     "%xmm4", "%xmm5", "%xmm6", "%xmm7"
   );
   return (int)r;
 }

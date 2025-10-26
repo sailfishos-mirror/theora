@@ -354,7 +354,7 @@
 /*SSE2 implementation of the fDCT for x86-64 only.
   Because of the 8 extra XMM registers on x86-64, this version can operate
    without any temporary stack access at all.*/
-void oc_enc_fdct8x8_x86_64sse2(ogg_int16_t _y[64],const ogg_int16_t _x[64]){
+void __attribute__((target("sse2"))) oc_enc_fdct8x8_x86_64sse2(ogg_int16_t _y[64],const ogg_int16_t _x[64]){
   ptrdiff_t a;
   __asm__ __volatile__(
     /*Load the input.*/
@@ -446,7 +446,11 @@ void oc_enc_fdct8x8_x86_64sse2(ogg_int16_t _y[64],const ogg_int16_t _x[64]){
 #undef OC_ZZ_LOAD_ROW_HI
     :[a]"=&r"(a)
     :[y]"r"(_y),[x]"r"(_x)
-    :"memory"
+    :"memory",
+     "%xmm0",  "%xmm1",  "%xmm2",  "%xmm3",
+     "%xmm4",  "%xmm5",  "%xmm6",  "%xmm7",
+     "%xmm8",  "%xmm9",  "%xmm10", "%xmm11",
+     "%xmm12", "%xmm13", "%xmm14", "%xmm15"
   );
 }
 #endif

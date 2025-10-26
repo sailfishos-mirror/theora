@@ -64,7 +64,7 @@
  "paddd %%xmm3,%%xmm2\n\t" \
  "paddd %%xmm2,%%xmm7\n\t" \
 
-unsigned oc_enc_frag_ssd_sse2(const unsigned char *_src,
+unsigned __attribute__((target("sse2"))) oc_enc_frag_ssd_sse2(const unsigned char *_src,
  const unsigned char *_ref,int _ystride){
   unsigned ret;
   __asm__ __volatile__(
@@ -82,6 +82,8 @@ unsigned oc_enc_frag_ssd_sse2(const unsigned char *_src,
     :[ret]"=a"(ret)
     :[src]"r"(_src),[ref]"r"(_ref),[ystride]"r"((ptrdiff_t)_ystride),
      [ystride3]"r"((ptrdiff_t)_ystride*3)
+    :"%xmm0", "%xmm1", "%xmm2", "%xmm3",
+     "%xmm4", "%xmm5", "%xmm6", "%xmm7"
   );
   return ret;
 }
@@ -92,7 +94,7 @@ static const unsigned char __attribute__((aligned(16))) OC_MASK_CONSTS[8]={
 
 /*Load a 2x8 array of pixels values from %[src] and %[ref] and compute their
    horizontal sums as well as their 16-bit differences subject to a mask.
-  %%xmm5 must contain OC_MASK_CONSTS[0...7] and %%xmm6 must contain 0.*/
+  %[cr] must contain OC_MASK_CONSTS[0...7] and %[mr] must contain 0.*/
 #define OC_LOAD_SUB_MASK_2x8 \
  "#OC_LOAD_SUB_MASK_2x8\n\t" \
  /*Start the loads and expand the next 8 bits of the mask.*/ \
@@ -104,8 +106,8 @@ static const unsigned char __attribute__((aligned(16))) OC_MASK_CONSTS[8]={
  "shr $8,%[m]\n\t" \
  "pshuflw $0x00,%%xmm4,%%xmm4\n\t" \
  "mov %h[m],%b[m]\n\t" \
- "pand %%xmm6,%%xmm4\n\t" \
- "pcmpeqb %%xmm6,%%xmm4\n\t" \
+ "pand %[cr],%%xmm4\n\t" \
+ "pcmpeqb %[cr],%%xmm4\n\t" \
  /*Perform the masking.*/ \
  "pand %%xmm4,%%xmm0\n\t" \
  "pand %%xmm4,%%xmm2\n\t" \
@@ -115,9 +117,9 @@ static const unsigned char __attribute__((aligned(16))) OC_MASK_CONSTS[8]={
  "movq (%[src],%[ystride]),%%xmm1\n\t" \
  "pshuflw $0x00,%%xmm4,%%xmm4\n\t" \
  "movq (%[ref],%[ystride]),%%xmm3\n\t" \
- "pand %%xmm6,%%xmm4\n\t" \
+ "pand %[cr],%%xmm4\n\t" \
  "punpcklbw %%xmm2,%%xmm0\n\t" \
- "pcmpeqb %%xmm6,%%xmm4\n\t" \
+ "pcmpeqb %[cr],%%xmm4\n\t" \
  "punpcklbw %%xmm2,%%xmm2\n\t" \
  /*Mask and unpack the second set of rows.*/ \
  "pand %%xmm4,%%xmm1\n\t" \
@@ -127,16 +129,19 @@ static const unsigned char __attribute__((aligned(16))) OC_MASK_CONSTS[8]={
  "psubw %%xmm2,%%xmm0\n\t" \
  "psubw %%xmm3,%%xmm1\n\t" \
 
-unsigned oc_enc_frag_border_ssd_sse2(const unsigned char *_src,
+unsigned __attribute__((target("sse2"))) oc_enc_frag_border_ssd_sse2(const unsigned char *_src,
  const unsigned char *_ref,int _ystride,ogg_int64_t _mask){
   ptrdiff_t ystride;
   unsigned  ret;
   int       i;
   ystride=_ystride;
+  /*Store intermediate values across __asm__ blocks*/
+  register sse2_reg cr;
+  register sse2_reg mr;
   __asm__ __volatile__(
-    "pxor %%xmm7,%%xmm7\n\t"
-    "movq %[c],%%xmm6\n\t"
-    :
+    "pxor %[mr],%[mr]\n\t"
+    "movq %[c],%[cr]\n\t"
+    :[cr]"=x"(cr), [mr]"=x"(mr)
     :[c]"m"(OC_CONST_ARRAY_OPERAND(unsigned char,OC_MASK_CONSTS,8))
   );
   for(i=0;i<4;i++){
@@ -148,22 +153,27 @@ unsigned oc_enc_frag_border_ssd_sse2(const unsigned char *_src,
         OC_LOAD_SUB_MASK_2x8
         "pmaddwd %%xmm0,%%xmm0\n\t"
         "pmaddwd %%xmm1,%%xmm1\n\t"
-        "paddd %%xmm0,%%xmm7\n\t"
-        "paddd %%xmm1,%%xmm7\n\t"
-        :[src]"+r"(_src),[ref]"+r"(_ref),[ystride]"+r"(ystride),[m]"+Q"(m)
+        "paddd %%xmm0,%[mr]\n\t"
+        "paddd %%xmm1,%[mr]\n\t"
+        :[src]"+r"(_src),[ref]"+r"(_ref),[ystride]"+r"(ystride),[m]"+Q"(m),[mr]"+x"(mr)
+        :[cr]"x"(cr)
+        :"%xmm0", "%xmm1", "%xmm2", "%xmm3",
+         "%xmm4"/*, "%xmm5", "%xmm6", "%xmm7"*/
       );
     }
     _src+=2*ystride;
     _ref+=2*ystride;
   }
   __asm__ __volatile__(
-    "movdqa %%xmm7,%%xmm6\n\t"
-    "punpckhqdq %%xmm7,%%xmm7\n\t"
+    "movdqa %[mr],%%xmm6\n\t"
+    "punpckhqdq %[mr],%%xmm7\n\t"
     "paddd %%xmm6,%%xmm7\n\t"
     "pshufd $1,%%xmm7,%%xmm6\n\t"
     "paddd %%xmm6,%%xmm7\n\t"
     "movd %%xmm7,%[ret]\n\t"
     :[ret]"=a"(ret)
+    :[mr]"x"(mr)
+    :"%xmm6", "%xmm7"
   );
   return ret;
 }
@@ -381,7 +391,7 @@ unsigned oc_enc_frag_border_ssd_sse2(const unsigned char *_src,
  OC_HADAMARD_AB_8x8 \
  OC_HADAMARD_C_ABS_ACCUM_8x8
 
-static unsigned oc_int_frag_satd_sse2(int *_dc,
+static unsigned __attribute__((target("sse2"))) oc_int_frag_satd_sse2(int *_dc,
  const unsigned char *_src,int _src_ystride,
  const unsigned char *_ref,int _ref_ystride){
   OC_ALIGN16(ogg_int16_t buf[16]);
@@ -434,25 +444,27 @@ static unsigned oc_int_frag_satd_sse2(int *_dc,
      [ref]"a"(_ref),[ref_ystride]"d"((ptrdiff_t)_ref_ystride)
     /*We have to use neg, so we actually clobber the condition codes for once
        (not to mention sub, and add).*/
-    :"cc"
+    :"cc",
+     "%xmm0", "%xmm1", "%xmm2", "%xmm3",
+     "%xmm4", "%xmm5", "%xmm6", "%xmm7"
   );
   *_dc=dc;
   return ret;
 }
 
-unsigned oc_enc_frag_satd_sse2(int *_dc,const unsigned char *_src,
+unsigned __attribute__((target("sse2"))) oc_enc_frag_satd_sse2(int *_dc,const unsigned char *_src,
  const unsigned char *_ref,int _ystride){
   return oc_int_frag_satd_sse2(_dc,_src,_ystride,_ref,_ystride);
 }
 
-unsigned oc_enc_frag_satd2_sse2(int *_dc,const unsigned char *_src,
+unsigned __attribute__((target("sse2"))) oc_enc_frag_satd2_sse2(int *_dc,const unsigned char *_src,
  const unsigned char *_ref1,const unsigned char *_ref2,int _ystride){
   OC_ALIGN8(unsigned char ref[64]);
   oc_int_frag_copy2_mmxext(ref,8,_ref1,_ref2,_ystride);
   return oc_int_frag_satd_sse2(_dc,_src,_ystride,ref,8);
 }
 
-unsigned oc_enc_frag_intra_satd_sse2(int *_dc,
+unsigned __attribute__((target("sse2"))) oc_enc_frag_intra_satd_sse2(int *_dc,
  const unsigned char *_src,int _ystride){
   OC_ALIGN16(ogg_int16_t buf[16]);
   unsigned ret;
@@ -491,7 +503,9 @@ unsigned oc_enc_frag_intra_satd_sse2(int *_dc,
     :[src]"r"(_src),[src4]"r"(_src+4*_ystride),
      [ystride]"r"((ptrdiff_t)_ystride),[ystride3]"r"((ptrdiff_t)3*_ystride)
     /*We have to use sub, so we actually clobber the condition codes for once.*/
-    :"cc"
+    :"cc",
+     "%xmm0", "%xmm1", "%xmm2", "%xmm3",
+     "%xmm4", "%xmm5", "%xmm6", "%xmm7"
   );
   *_dc=dc;
   return ret;

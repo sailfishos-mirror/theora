@@ -206,7 +206,7 @@ const unsigned short __attribute__((aligned(16),used)) OC_IDCT_CONSTS[64]={
   "psraw $4,%%xmm7\n\t" \
   "movdqa %%xmm7,"OC_MEM_OFFS(0x70,y)"\n\t" \
 
-static void oc_idct8x8_slow_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
+static void __attribute__((target("sse2"))) oc_idct8x8_slow_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
   OC_ALIGN16(ogg_int16_t buf[16]);
   int i;
   /*This routine accepts an 8x8 matrix pre-transposed.*/
@@ -230,16 +230,21 @@ static void oc_idct8x8_slow_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
      [y]"=m"(OC_ARRAY_OPERAND(ogg_int16_t,_y,64))
     :[x]"m"(OC_CONST_ARRAY_OPERAND(ogg_int16_t,_x,64)),
      [c]"m"(OC_CONST_ARRAY_OPERAND(ogg_int16_t,OC_IDCT_CONSTS,64))
+    :"%xmm0", "%xmm1", "%xmm2", "%xmm3",
+     "%xmm4", "%xmm5", "%xmm6", "%xmm7"
   );
-  __asm__ __volatile__("pxor %%xmm0,%%xmm0\n\t"::);
+  /*Store 0 in zr and use it in the loop. This translates to nothing with -O1.*/
+  register sse2_reg zr;
+  __asm__ __volatile__("pxor %[zr],%[zr]\n\t":[zr]"=x"(zr));
   /*Clear input data for next block (decoder only).*/
   for(i=0;i<2;i++){
     __asm__ __volatile__(
-      "movdqa %%xmm0,"OC_MEM_OFFS(0x00,x)"\n\t"
-      "movdqa %%xmm0,"OC_MEM_OFFS(0x10,x)"\n\t"
-      "movdqa %%xmm0,"OC_MEM_OFFS(0x20,x)"\n\t"
-      "movdqa %%xmm0,"OC_MEM_OFFS(0x30,x)"\n\t"
+      "movdqa %[zr],"OC_MEM_OFFS(0x00,x)"\n\t"
+      "movdqa %[zr],"OC_MEM_OFFS(0x10,x)"\n\t"
+      "movdqa %[zr],"OC_MEM_OFFS(0x20,x)"\n\t"
+      "movdqa %[zr],"OC_MEM_OFFS(0x30,x)"\n\t"
       :[x]"=m"(OC_ARRAY_OPERAND(ogg_int16_t,_x+i*32,32))
+      :[zr]"x"(zr)
     );
   }
 }
@@ -392,7 +397,7 @@ static void oc_idct8x8_slow_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
   "psubw %%xmm7,%%xmm4\n\t" \
   "psubw %%xmm6,%%xmm5\n\t" \
 
-static void oc_idct8x8_10_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
+static __attribute__((target("sse2"))) void oc_idct8x8_10_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
   OC_ALIGN16(ogg_int16_t buf[16]);
   /*This routine accepts an 8x8 matrix pre-transposed.*/
   __asm__ __volatile__(
@@ -408,6 +413,8 @@ static void oc_idct8x8_10_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
      [y]"=m"(OC_ARRAY_OPERAND(ogg_int16_t,_y,64))
     :[x]"m"OC_CONST_ARRAY_OPERAND(ogg_int16_t,_x,64),
      [c]"m"(OC_CONST_ARRAY_OPERAND(ogg_int16_t,OC_IDCT_CONSTS,64))
+    :"%xmm0", "%xmm1", "%xmm2", "%xmm3",
+     "%xmm4", "%xmm5", "%xmm6", "%xmm7"
   );
   /*Clear input data for next block (decoder only).*/
   __asm__ __volatile__(
@@ -423,7 +430,7 @@ static void oc_idct8x8_10_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64]){
 /*Performs an inverse 8x8 Type-II DCT transform.
   The input is assumed to be scaled by a factor of 4 relative to orthonormal
    version of the transform.*/
-void oc_idct8x8_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64],int _last_zzi){
+void __attribute__((target("sse2"))) oc_idct8x8_sse2(ogg_int16_t _y[64],ogg_int16_t _x[64],int _last_zzi){
   /*_last_zzi is subtly different from an actual count of the number of
      coefficients we decoded for this block.
     It contains the value of zzi BEFORE the final token in the block was

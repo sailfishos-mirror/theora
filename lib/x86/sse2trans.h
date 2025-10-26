@@ -19,6 +19,8 @@
 # define _x86_sse2trans_H (1)
 # include "x86int.h"
 
+typedef char sse2_reg __attribute__((vector_size(16),__may_alias__));
+
 # if defined(OC_X86_64_ASM)
 /*On x86-64 we can transpose in-place without spilling registers.
   By clever choices of the order to apply the butterflies and the order of
