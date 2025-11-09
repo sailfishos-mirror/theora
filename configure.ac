@@ -278,37 +278,34 @@ if test "x${ac_enable_asm}" = xyes; then
     dnl  architecture you specified).
     dnl Order here is important.
     if test "x${ac_enable_asflag_probe}" = xyes; then
-      if test x$HAVE_ARM_ASM_NEON != x1 ; then
-        dnl Try to set some flags to enable NEON instructions.
-        AC_MSG_NOTICE([trying custom CCASFLAGS to enable NEON instructions...])
-        ARM_CCASFLAGS="-mfpu=neon -march=armv7-a"
-        CFLAGS="$save_CFLAGS $ARM_CCASFLAGS"
-        AS_ASM_ARM_NEON([HAVE_ARM_ASM_NEON=1],[HAVE_ARM_ASM_NEON=0])
-        if test x$HAVE_ARM_ASM_NEON != x1 ; then
-          ARM_CCASFLAGS=
-          CFLAGS="$save_CFLAGS"
+      if test x$HAVE_ARM_ASM_EDSP != x1 ; then
+        dnl Try to set some flags to enable EDSP instructions.
+        AC_MSG_NOTICE([trying custom CCASFLAGS to enable EDSP compilation...])
+        test_CCASFLAGS="-march=armv5e"
+        CFLAGS="$save_CFLAGS $test_CCASFLAGS"
+        AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
+        if test x$HAVE_ARM_ASM_EDSP = x1 ; then
+          ARM_CCASFLAGS=$test_CCASFLAGS
         fi
       fi
       if test x$HAVE_ARM_ASM_MEDIA != x1 ; then
         dnl Try to set some flags to enable ARMv6 media instructions.
         AC_MSG_NOTICE([trying custom CCASFLAGS to enable ARMv6 media instructions...])
-        ARM_CCASFLAGS="-march=armv6j"
-        CFLAGS="$save_CFLAGS $ARM_CCASFLAGS"
+        test_CCASFLAGS="-march=armv6j"
+        CFLAGS="$save_CFLAGS $test_CCASFLAGS"
         AS_ASM_ARM_MEDIA([HAVE_ARM_ASM_MEDIA=1],[HAVE_ARM_ASM_MEDIA=0])
-        if test x$HAVE_ARM_ASM_MEDIA != x1 ; then
-          ARM_CCASFLAGS=
-          CFLAGS="$save_CFLAGS"
+        if test x$HAVE_ARM_ASM_MEDIA = x1 ; then
+          ARM_CCASFLAGS=$test_CCASFLAGS
         fi
       fi
-      if test x$HAVE_ARM_ASM_EDSP != x1 ; then
-        dnl Try to set some flags to enable EDSP instructions.
-        AC_MSG_NOTICE([trying custom CCASFLAGS to enable EDSP compilation...])
-        ARM_CCASFLAGS="-march=armv5e"
-        CFLAGS="$save_CFLAGS $ARM_CCASFLAGS"
-        AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
-        if test x$HAVE_ARM_ASM_EDSP != x1 ; then
-          ARM_CCASFLAGS=
-          CFLAGS="$save_CFLAGS"
+      if test x$HAVE_ARM_ASM_NEON != x1 ; then
+        dnl Try to set some flags to enable NEON instructions.
+        AC_MSG_NOTICE([trying custom CCASFLAGS to enable NEON instructions...])
+        test_CCASFLAGS="-mfpu=neon -march=armv7-a"
+        CFLAGS="$save_CFLAGS $test_CCASFLAGS"
+        AS_ASM_ARM_NEON([HAVE_ARM_ASM_NEON=1],[HAVE_ARM_ASM_NEON=0])
+        if test x$HAVE_ARM_ASM_NEON = x1 ; then
+          ARM_CCASFLAGS=$test_CCASFLAGS
         fi
       fi
     fi
