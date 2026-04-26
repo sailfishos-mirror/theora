@@ -1206,6 +1206,7 @@ int avi_parse_input_file(avi_t *AVI, int getIndex)
    {
       /* List tags are completely ignored */
 
+      if (i + 8 > hdrl_len) break;
       if(strncasecmp((char *) hdrl_data+i, "LIST",4)==0) { i+= 12; continue; }
 
       n = str2ulong(hdrl_data+i+4);
@@ -1215,6 +1216,7 @@ int avi_parse_input_file(avi_t *AVI, int getIndex)
 
       if(strncasecmp((char *)hdrl_data+i,"strh",4)==0)
       {
+         if (i + 56 > hdrl_len) break;
          i += 8;
          if(strncasecmp((char *)hdrl_data+i,"vids",4) == 0 && !vids_strh_seen)
          {
@@ -1263,6 +1265,7 @@ int avi_parse_input_file(avi_t *AVI, int getIndex)
          i += 8;
          if(lasttag == 1)
          {
+            if (i + 40 > hdrl_len) break;
             AVI->width  = str2ulong(hdrl_data+i+4);
             AVI->height = str2ulong(hdrl_data+i+8);
             vids_strf_seen = 1;
@@ -1275,6 +1278,7 @@ int avi_parse_input_file(avi_t *AVI, int getIndex)
          }
          else if(lasttag == 2)
          {
+            if (i + 18 > hdrl_len) break;
             AVI->track[AVI->aptr].a_fmt   = str2ushort(hdrl_data+i  );
 
 	    //ThOe
