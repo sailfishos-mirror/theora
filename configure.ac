@@ -14,7 +14,7 @@ AM_MAINTAINER_MODE([enable])
 
 dnl we use doc_DATA in doc/Makefile.am which requires autoconf >= 2.60
 dnl to define docdir for us.
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
