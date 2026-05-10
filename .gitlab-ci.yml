@@ -94,7 +94,7 @@ autotools-mingw:
     - (cd build-mingw && CPPFLAGS=-I`pwd`/ogg-mingw/include LDFLAGS=-L`pwd`/ogg-mingw/src ../configure --disable-examples ${CONFIG_FLAGS})
     - (cd build-mingw && make)
   variables:
-    CONFIG_FLAGS: --disable-shared --host=x86_64-pc-linux-gnu
+    CONFIG_FLAGS: --host=x86_64-w64-mingw32
     INSTALL_COMPILER: gcc-mingw-w64
     CC: x86_64-w64-mingw32-gcc
 
