@@ -248,70 +248,82 @@ if test "x${ac_enable_asm}" = xyes; then
   arm*)
     cpu_arm=yes
     cpu_optimization="ARM"
-    AC_DEFINE([OC_ARM_ASM], [],  [make use of arm asm optimization])
     AC_ARG_ENABLE(asflag-probe,
         AS_HELP_STRING([--disable-asflag-probe], [Disable instructions not supported by the default ASFLAGS (ARM only).]),
         [ ac_enable_asflag_probe=$enableval ], [ ac_enable_asflag_probe=yes] )
 
     dnl our ARM assembly requires perl to run the arm2gnu reformatter
-    AC_CHECK_PROG([HAVE_PERL], perl, yes, no)
-    if test "x$HAVE_PERL" = "xno"; then
-      AC_MSG_WARN([*** ARM assembly requires perl -- disabling optimizations])
-      cpu_arm=no
-      cpu_optimization="(missing perl dependency for ARM)"
-    fi
-
-    dnl AC_TRY_ASSEMBLE uses CFLAGS instead of CCASFLAGS
-    save_CFLAGS="$CFLAGS"
-    ARM_CCASFLAGS=
-    dnl Test for instruction set support with the default CCASFLAGS.
-    AS_ASM_ARM_NEON([HAVE_ARM_ASM_NEON=1],[HAVE_ARM_ASM_NEON=0])
-    AS_ASM_ARM_MEDIA([HAVE_ARM_ASM_MEDIA=1],[HAVE_ARM_ASM_MEDIA=0])
-    AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
-    dnl gas will not assemble instructions unless the architecture explicitly
-    dnl  supports it (unlike on x86).
-    dnl Try to speculatively add ASFLAGS to enable usage of these instructions
-    dnl  at assembly time (actual support is detected at runtime).
-    dnl If the user has already specified -march or -mcpu flags, this may give
-    dnl  some spurious warnings (use --disable-asflag-probe to avoid this if
-    dnl  you don't want run-time support for instructions not available on the
-    dnl  architecture you specified).
-    dnl Order here is important.
-    if test "x${ac_enable_asflag_probe}" = xyes; then
-      if test x$HAVE_ARM_ASM_EDSP != x1 ; then
-        dnl Try to set some flags to enable EDSP instructions.
-        AC_MSG_NOTICE([trying custom CCASFLAGS to enable EDSP compilation...])
-        test_CCASFLAGS="-march=armv5e"
-        CFLAGS="$save_CFLAGS $test_CCASFLAGS"
-        AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
-        if test x$HAVE_ARM_ASM_EDSP = x1 ; then
-          ARM_CCASFLAGS=$test_CCASFLAGS
-        fi
-      fi
-      if test x$HAVE_ARM_ASM_MEDIA != x1 ; then
-        dnl Try to set some flags to enable ARMv6 media instructions.
-        AC_MSG_NOTICE([trying custom CCASFLAGS to enable ARMv6 media instructions...])
-        test_CCASFLAGS="-march=armv6j"
-        CFLAGS="$save_CFLAGS $test_CCASFLAGS"
-        AS_ASM_ARM_MEDIA([HAVE_ARM_ASM_MEDIA=1],[HAVE_ARM_ASM_MEDIA=0])
-        if test x$HAVE_ARM_ASM_MEDIA = x1 ; then
-          ARM_CCASFLAGS=$test_CCASFLAGS
-        fi
-      fi
-      if test x$HAVE_ARM_ASM_NEON != x1 ; then
-        dnl Try to set some flags to enable NEON instructions.
-        AC_MSG_NOTICE([trying custom CCASFLAGS to enable NEON instructions...])
-        test_CCASFLAGS="-mfpu=neon -march=armv7-a"
-        CFLAGS="$save_CFLAGS $test_CCASFLAGS"
-        AS_ASM_ARM_NEON([HAVE_ARM_ASM_NEON=1],[HAVE_ARM_ASM_NEON=0])
-        if test x$HAVE_ARM_ASM_NEON = x1 ; then
-          ARM_CCASFLAGS=$test_CCASFLAGS
-        fi
-      fi
-    fi
-
-    dnl Only enable if we passed the perl test above
     if test x$cpu_arm = xyes; then
+      AC_CHECK_PROG([HAVE_PERL], perl, yes, no)
+      if test "x$HAVE_PERL" = "xno"; then
+        AC_MSG_WARN([*** ARM assembly requires perl -- disabling optimizations])
+        cpu_arm=no
+        cpu_optimization="(missing perl dependency for ARM)"
+      fi
+    fi
+
+    if test x$cpu_arm = xyes; then
+      dnl This is synchronized with lib/arm/armcpu.c
+      AC_COMPILE_IFELSE([AC_LANG_SOURCE([[#if ! defined(__linux__) && ! defined(__riscos__)
+                                   #error
+                                   #endif
+                                   ]])],,
+                  [cpu_arm=no
+                   cpu_optimization="no optimization for your OS, please send a patch"])
+    fi
+
+    if test x$cpu_arm = xyes; then
+      AC_DEFINE([OC_ARM_ASM], [],  [make use of arm asm optimization])
+
+      dnl AC_TRY_ASSEMBLE uses CFLAGS instead of CCASFLAGS
+      save_CFLAGS="$CFLAGS"
+      ARM_CCASFLAGS=
+      dnl Test for instruction set support with the default CCASFLAGS.
+      AS_ASM_ARM_NEON([HAVE_ARM_ASM_NEON=1],[HAVE_ARM_ASM_NEON=0])
+      AS_ASM_ARM_MEDIA([HAVE_ARM_ASM_MEDIA=1],[HAVE_ARM_ASM_MEDIA=0])
+      AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
+      dnl gas will not assemble instructions unless the architecture explicitly
+      dnl  supports it (unlike on x86).
+      dnl Try to speculatively add ASFLAGS to enable usage of these instructions
+      dnl  at assembly time (actual support is detected at runtime).
+      dnl If the user has already specified -march or -mcpu flags, this may give
+      dnl  some spurious warnings (use --disable-asflag-probe to avoid this if
+      dnl  you don't want run-time support for instructions not available on the
+      dnl  architecture you specified).
+      dnl Order here is important.
+      if test "x${ac_enable_asflag_probe}" = xyes; then
+        if test x$HAVE_ARM_ASM_EDSP != x1 ; then
+          dnl Try to set some flags to enable EDSP instructions.
+          AC_MSG_NOTICE([trying custom CCASFLAGS to enable EDSP compilation...])
+          test_CCASFLAGS="-march=armv5e"
+          CFLAGS="$save_CFLAGS $test_CCASFLAGS"
+          AS_ASM_ARM_EDSP([HAVE_ARM_ASM_EDSP=1],[HAVE_ARM_ASM_EDSP=0])
+          if test x$HAVE_ARM_ASM_EDSP = x1 ; then
+            ARM_CCASFLAGS=$test_CCASFLAGS
+          fi
+        fi
+        if test x$HAVE_ARM_ASM_MEDIA != x1 ; then
+          dnl Try to set some flags to enable ARMv6 media instructions.
+          AC_MSG_NOTICE([trying custom CCASFLAGS to enable ARMv6 media instructions...])
+          test_CCASFLAGS="-march=armv6j"
+          CFLAGS="$save_CFLAGS $test_CCASFLAGS"
+          AS_ASM_ARM_MEDIA([HAVE_ARM_ASM_MEDIA=1],[HAVE_ARM_ASM_MEDIA=0])
+          if test x$HAVE_ARM_ASM_MEDIA = x1 ; then
+            ARM_CCASFLAGS=$test_CCASFLAGS
+          fi
+        fi
+        if test x$HAVE_ARM_ASM_NEON != x1 ; then
+          dnl Try to set some flags to enable NEON instructions.
+          AC_MSG_NOTICE([trying custom CCASFLAGS to enable NEON instructions...])
+          test_CCASFLAGS="-mfpu=neon -march=armv7-a"
+          CFLAGS="$save_CFLAGS $test_CCASFLAGS"
+          AS_ASM_ARM_NEON([HAVE_ARM_ASM_NEON=1],[HAVE_ARM_ASM_NEON=0])
+          if test x$HAVE_ARM_ASM_NEON = x1 ; then
+            ARM_CCASFLAGS=$test_CCASFLAGS
+          fi
+        fi
+      fi
+
       if test x$HAVE_ARM_ASM_EDSP = x1 ; then
         AC_DEFINE(OC_ARM_ASM_EDSP, 1,
           [Define if assembler supports EDSP instructions])
@@ -330,10 +342,10 @@ if test "x${ac_enable_asm}" = xyes; then
         cpu_optimization="$cpu_optimization (NEON)"
       fi
       AC_SUBST(HAVE_ARM_ASM_NEON)
-    fi
 
-    CFLAGS="$save_CFLAGS"
-    CCASFLAGS="$CCASFLAGS $ARM_CCASFLAGS"
+      CFLAGS="$save_CFLAGS"
+      CCASFLAGS="$CCASFLAGS $ARM_CCASFLAGS"
+    fi
     ;;
   tic6x)
     cpu_c64x=yes
